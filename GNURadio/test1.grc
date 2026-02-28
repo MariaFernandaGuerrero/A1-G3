@@ -75,7 +75,7 @@ blocks:
     repeat: 'True'
     tags: '[]'
     type: float
-    vector: (1.0, 2.0, 4.0, 7.0, 11.0, 16.0, 22.0)
+    vector: (1.0, 2.0, 4.0, 7.0, 11.0, 16.0, 22.0,16.0, 11.0, 7.0, 4.0, 2.0)
     vlen: '1'
   states:
     bus_sink: false
@@ -89,23 +89,25 @@ blocks:
   parameters:
     _source_code: "import numpy as np\nfrom gnuradio import gr\n\nclass blk(gr.sync_block):\n\
       \n    def __init__(self):\n        gr.sync_block.__init__(\n            self,\n\
-      \            name=\"e_Diff\",  # Nombre en GRC\n            in_sig=[np.float32],\n\
-      \            out_sig=[np.float32]\n        )\n\n        # Guardamos la \xFA\
-      ltima muestra del bloque anterior\n        self.x_anterior = 0.0\n\n    def\
-      \ work(self, input_items, output_items):\n        x = input_items[0]      #\
-      \ Se\xF1al de entrada\n        y = output_items[0]     # Se\xF1al diferenciada\n\
-      \n        # Diferenciador discreto:\n        # y[n] = x[n] - x[n-1]\n      \
-      \  y[:] = np.diff(x, prepend=self.x_anterior)\n\n        # Guardamos la \xFA\
-      ltima muestra para el siguiente bloque\n        self.x_anterior = x[-1]\n\n\
-      \        return len(y)\n"
+      \            name=\"e_Diff_2ndOrder\",\n            in_sig=[np.float32],\n \
+      \           out_sig=[np.float32]\n        )\n\n        # Frecuencia de muestreo\n\
+      \        self.fs = 10.0\n        self.Ts = 1.0 / self.fs\n\n        # Guardamos\
+      \ las dos muestras anteriores\n        self.x_prev1 = 0.0\n        self.x_prev2\
+      \ = 0.0\n\n    def work(self, input_items, output_items):\n        x = input_items[0]\n\
+      \        y = output_items[0]\n\n        # Extendemos con las dos muestras previas\n\
+      \        x_ext = np.concatenate(([self.x_prev2, self.x_prev1], x))\n\n     \
+      \   # Derivada hacia atr\xE1s de orden 2:\n        # y[n] = (3x[n] - 4x[n-1]\
+      \ + x[n-2]) / (2Ts)\n        y[:] = (3*x_ext[2:] - 4*x_ext[1:-1] + x_ext[:-2])\
+      \ / (2.0 * self.Ts)\n\n        # Actualizamos memoria\n        self.x_prev2\
+      \ = x_ext[-2]\n        self.x_prev1 = x_ext[-1]\n\n        return len(y)\n"
     affinity: ''
     alias: ''
     comment: ''
     maxoutbuf: '0'
     minoutbuf: '0'
   states:
-    _io_cache: ('e_Diff', 'blk', [], [('0', 'float', 1)], [('0', 'float', 1)], '',
-      [])
+    _io_cache: ('e_Diff_2ndOrder', 'blk', [], [('0', 'float', 1)], [('0', 'float',
+      1)], '', [])
     bus_sink: false
     bus_source: false
     bus_structure: null
@@ -187,7 +189,7 @@ blocks:
     tr_slope: qtgui.TRIG_SLOPE_POS
     tr_tag: '""'
     type: float
-    update_time: '1'
+    update_time: '0.1'
     width1: '1'
     width10: '1'
     width2: '1'
@@ -206,7 +208,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [392, 164.0]
+    coordinate: [456, 164.0]
     rotation: 0
     state: true
 

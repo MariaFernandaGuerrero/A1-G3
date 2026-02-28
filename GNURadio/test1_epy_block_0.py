@@ -6,23 +6,32 @@ class blk(gr.sync_block):
     def __init__(self):
         gr.sync_block.__init__(
             self,
-            name="e_Diff",  # Nombre en GRC
+            name="e_Diff_2ndOrder",
             in_sig=[np.float32],
             out_sig=[np.float32]
         )
 
-        # Guardamos la última muestra del bloque anterior
-        self.x_anterior = 0.0
+        # Frecuencia de muestreo
+        self.fs = 10.0
+        self.Ts = 1.0 / self.fs
+
+        # Guardamos las dos muestras anteriores
+        self.x_prev1 = 0.0
+        self.x_prev2 = 0.0
 
     def work(self, input_items, output_items):
-        x = input_items[0]      # Señal de entrada
-        y = output_items[0]     # Señal diferenciada
+        x = input_items[0]
+        y = output_items[0]
 
-        # Diferenciador discreto:
-        # y[n] = x[n] - x[n-1]
-        y[:] = np.diff(x, prepend=self.x_anterior)
+        # Extendemos con las dos muestras previas
+        x_ext = np.concatenate(([self.x_prev2, self.x_prev1], x))
 
-        # Guardamos la última muestra para el siguiente bloque
-        self.x_anterior = x[-1]
+        # Derivada hacia atrás de orden 2:
+        # y[n] = (3x[n] - 4x[n-1] + x[n-2]) / (2Ts)
+        y[:] = (3*x_ext[2:] - 4*x_ext[1:-1] + x_ext[:-2]) / (2.0 * self.Ts)
+
+        # Actualizamos memoria
+        self.x_prev2 = x_ext[-2]
+        self.x_prev1 = x_ext[-1]
 
         return len(y)
