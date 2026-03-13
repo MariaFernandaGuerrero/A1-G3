@@ -163,7 +163,7 @@ blocks:
     affinity: ''
     alias: ''
     comment: ''
-    const: '0'
+    const: '1'
     maxoutbuf: '0'
     minoutbuf: '0'
     type: float
@@ -171,7 +171,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [832, 296.0]
+    coordinate: [824, 304.0]
     rotation: 0
     state: true
 - name: analog_random_source_x_0
@@ -209,9 +209,9 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [248, 128.0]
+    coordinate: [232, 128.0]
     rotation: 0
-    state: disabled
+    state: enabled
 - name: blocks_char_to_float_0
   id: blocks_char_to_float
   parameters:
@@ -226,7 +226,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [224, 200.0]
+    coordinate: [176, 200.0]
     rotation: 0
     state: true
 - name: blocks_multiply_const_vxx_0
@@ -246,7 +246,7 @@ blocks:
     bus_structure: null
     coordinate: [864, 112.0]
     rotation: 0
-    state: disabled
+    state: enabled
 - name: blocks_multiply_const_vxx_0_0
   id: blocks_multiply_const_vxx
   parameters:
@@ -264,7 +264,7 @@ blocks:
     bus_structure: null
     coordinate: [408, 128.0]
     rotation: 0
-    state: disabled
+    state: enabled
 - name: blocks_multiply_const_vxx_0_1
   id: blocks_multiply_const_vxx
   parameters:
@@ -280,7 +280,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [752, 168.0]
+    coordinate: [864, 192.0]
     rotation: 0
     state: disabled
 - name: epy_block_0
@@ -288,15 +288,20 @@ blocks:
   parameters:
     _source_code: "import numpy as np\nfrom gnuradio import gr\nimport math\n\nclass\
       \ blk(gr.sync_block):  \n    \"\"\"This block is a RF VCO and works as following:\
-      \ \u2026..\"\"\"\n\n    def __init__(self, fc=128000, samp_rate=320000):  \n\
-      \        gr.sync_block.__init__(\n            self,\n            name='e_RF_VCO_ff',\
-      \   \n            in_sig=[np.float32, np.float32],\n            out_sig=[np.float32]\n\
-      \        )\n        self.fc = fc\n        self.samp_rate = samp_rate\n     \
-      \   self.n_m=0\n\n    def work(self, input_items, output_items):\n        A=input_items[0]\n\
-      \        Q=input_items[1]\n        y=output_items[0]\n        N=len(A)\n   \
-      \     n=np.linspace(self.n_m,self.n_m+N-1,N)\n        self.n_m += N\n      \
-      \  y[:]=A*np.cos(2*math.pi*self.fc*n/self.samp_rate+Q)\n        return len(output_items[0])\n\
-      \n\n"
+      \ It implements a controlled oscilator for RF taking as inputs the phase and\
+      \ amplitude fo a signal, \n    as well as a carrier frequency and sampling rate\
+      \ as parameters. the phase of the signal is added to a carrier phase computed\
+      \ from the parameters,\n    that signal is then multiplied by the amplitude\
+      \ of the original signal. This algorithm along with the differents block in\
+      \ the diagram result on a\n    modulations such as OOK, BPSK y FSK\"\"\"\n\n\
+      \    def __init__(self, fc=128000, samp_rate=320000):  \n        gr.sync_block.__init__(\n\
+      \            self,\n            name='e_RF_VCO_ff',   \n            in_sig=[np.float32,\
+      \ np.float32],\n            out_sig=[np.float32]\n        )\n        self.fc\
+      \ = fc\n        self.samp_rate = samp_rate\n        self.n_m=0\n\n    def work(self,\
+      \ input_items, output_items):\n        A=input_items[0]\n        Q=input_items[1]\n\
+      \        y=output_items[0]\n        N=len(A)\n        n=np.linspace(self.n_m,self.n_m+N-1,N)\n\
+      \        self.n_m += N\n        y[:]=A*np.cos(2*math.pi*self.fc*n/self.samp_rate+Q)\n\
+      \        return len(output_items[0])\n\n\n"
     affinity: ''
     alias: ''
     comment: ''
@@ -305,9 +310,15 @@ blocks:
     minoutbuf: '0'
     samp_rate: samp_rate
   states:
-    _io_cache: "('e_RF_VCO_ff', 'blk', [('fc', '128000'), ('samp_rate', '320000')],\
-      \ [('0', 'float', 1), ('1', 'float', 1)], [('0', 'float', 1)], 'This block is\
-      \ a RF VCO and works as following: \u2026..', ['fc', 'samp_rate'])"
+    _io_cache: '(''e_RF_VCO_ff'', ''blk'', [(''fc'', ''128000''), (''samp_rate'',
+      ''320000'')], [(''0'', ''float'', 1), (''1'', ''float'', 1)], [(''0'', ''float'',
+      1)], ''This block is a RF VCO and works as following: It implements a controlled
+      oscilator for RF taking as inputs the phase and amplitude fo a signal, \n    as
+      well as a carrier frequency and sampling rate as parameters. the phase of the
+      signal is added to a carrier phase computed from the parameters,\n    that signal
+      is then multiplied by the amplitude of the original signal. This algorithm along
+      with the differents block in the diagram result on a\n    modulations such as
+      OOK, BPSK y FSK'', [''fc'', ''samp_rate''])'
     bus_sink: false
     bus_source: false
     bus_structure: null
@@ -324,7 +335,7 @@ blocks:
       \   \n            in_sig=[np.float32, np.float32],\n            out_sig=[np.complex64]\n\
       \        )\n        \n    def work(self, input_items, output_items):\n     \
       \   A=input_items[0]\n        Q=input_items[1]\n        y=output_items[0]\n\
-      \        N=len(A)\n        y[:]=A*np.exp(1j*Q)\n        return len(output_items[0])\n"
+      \        N=len(A)\n        y[:]=A*np.exp(1j*Q)\n        return len(y)\n"
     affinity: ''
     alias: ''
     comment: ''
@@ -337,7 +348,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1102, 285]
+    coordinate: [1104, 296.0]
     rotation: 0
     state: true
 - name: epy_block_0_1
@@ -370,7 +381,7 @@ blocks:
     bus_structure: null
     coordinate: [688, 120.0]
     rotation: 0
-    state: disabled
+    state: enabled
 - name: import_0
   id: import
   parameters:
@@ -413,7 +424,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [456, 192.0]
+    coordinate: [536, 192.0]
     rotation: 0
     state: true
 - name: qtgui_const_sink_x_0
@@ -1068,7 +1079,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [368.0, 312]
+    coordinate: [464.0, 312]
     rotation: 270
     state: true
 - name: virtual_sink_0_0_0
@@ -1164,20 +1175,18 @@ blocks:
     state: true
 
 connections:
-- [analog_const_source_x_0, '0', epy_block_0, '1']
-- [analog_const_source_x_0, '0', epy_block_0_0, '1']
+- [analog_const_source_x_0, '0', epy_block_0, '0']
+- [analog_const_source_x_0, '0', epy_block_0_0, '0']
 - [analog_random_source_x_0, '0', blocks_char_to_float_0, '0']
 - [blocks_add_const_vxx_0, '0', blocks_multiply_const_vxx_0_0, '0']
 - [blocks_char_to_float_0, '0', blocks_add_const_vxx_0, '0']
-- [blocks_char_to_float_0, '0', interp_fir_filter_xxx_0, '0']
 - [blocks_char_to_float_0, '0', virtual_sink_0_0, '0']
+- [blocks_multiply_const_vxx_0, '0', epy_block_0, '1']
+- [blocks_multiply_const_vxx_0, '0', epy_block_0_0, '1']
 - [blocks_multiply_const_vxx_0_0, '0', interp_fir_filter_xxx_0, '0']
-- [blocks_multiply_const_vxx_0_0, '0', virtual_sink_0_0, '0']
 - [epy_block_0, '0', virtual_sink_0_0_0_0, '0']
 - [epy_block_0_0, '0', virtual_sink_0_0_0_0_0, '0']
 - [epy_block_0_1, '0', blocks_multiply_const_vxx_0, '0']
-- [interp_fir_filter_xxx_0, '0', epy_block_0, '0']
-- [interp_fir_filter_xxx_0, '0', epy_block_0_0, '0']
 - [interp_fir_filter_xxx_0, '0', epy_block_0_1, '0']
 - [interp_fir_filter_xxx_0, '0', virtual_sink_0_0_0, '0']
 - [virtual_source_0_0, '0', qtgui_time_sink_x_0_0, '0']
