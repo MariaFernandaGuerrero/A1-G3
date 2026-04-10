@@ -23,6 +23,7 @@ options:
     sizing_mode: fixed
     thread_safe_setters: ''
     title: Not titled yet
+    window_size: (1000,1000)
   states:
     bus_sink: false
     bus_source: false
@@ -142,7 +143,7 @@ blocks:
     bus_structure: null
     coordinate: [274, 127]
     rotation: 0
-    state: enabled
+    state: disabled
 - name: analog_noise_source_x_0
   id: analog_noise_source_x
   parameters:
@@ -199,7 +200,7 @@ blocks:
     bus_structure: null
     coordinate: [419, 131]
     rotation: 0
-    state: enabled
+    state: disabled
 - name: blocks_char_to_float_0
   id: blocks_char_to_float
   parameters:
@@ -250,7 +251,7 @@ blocks:
     bus_structure: null
     coordinate: [479, 143]
     rotation: 0
-    state: enabled
+    state: disabled
 - name: blocks_multiply_const_vxx_1
   id: blocks_multiply_const_vxx
   parameters:
@@ -677,7 +678,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [237, 245]
+    coordinate: [348.0, 312]
     rotation: 270
     state: true
 - name: virtual_sink_0_1_0
@@ -739,6 +740,7 @@ connections:
 - [analog_random_source_x_0, '0', blocks_char_to_float_0, '0']
 - [blocks_add_xx_0, '0', blocks_multiply_const_vxx_0, '0']
 - [blocks_char_to_float_0, '0', blocks_add_xx_0, '1']
+- [blocks_char_to_float_0, '0', interp_fir_filter_xxx_0, '0']
 - [blocks_char_to_float_0, '0', virtual_sink_0_1, '0']
 - [blocks_complex_to_mag_squared_0, '0', epy_block_0, '0']
 - [blocks_multiply_const_vxx_0, '0', interp_fir_filter_xxx_0, '0']
