@@ -1,0 +1,19 @@
+# Crear y entrar al repositorio
+git init
+
+# Crear la rama
+git checkout -b Practica_III_Mafe
+
+# Crear las carpetas
+mkdir GNURadio
+mkdir Informe
+
+# Crear archivos para que Git las reconozca
+touch GNURadio/.gitkeep
+touch Informe/.gitkeep
+
+# Agregar y subir cambios
+git add .
+git commit -m "Estructura inicial: carpetas GNURadio e Informe"
+git remote add origin https://github.com/TU_USUARIO/TU_REPOSITORIO.git
+git push -u origin Practica_III_Mafe
