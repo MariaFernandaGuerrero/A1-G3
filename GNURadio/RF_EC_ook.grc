@@ -226,7 +226,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [150, 200]
+    coordinate: [192, 200.0]
     rotation: 0
     state: true
 - name: blocks_multiply_const_vxx_0
@@ -413,7 +413,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [511, 197]
+    coordinate: [544, 192.0]
     rotation: 0
     state: true
 - name: qtgui_const_sink_x_0
@@ -1191,3 +1191,4 @@ connections:
 
 metadata:
   file_format: 1
+  grc_version: v3.10.11.0-89-ga17f69e7

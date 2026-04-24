@@ -7,45 +7,32 @@
 # GNU Radio Python Flow Graph
 # Title: ook
 # Author: radiogis_director
-# GNU Radio version: 3.10.1.1
-
-from packaging.version import Version as StrictVersion
-
-if __name__ == '__main__':
-    import ctypes
-    import sys
-    if sys.platform.startswith('linux'):
-        try:
-            x11 = ctypes.cdll.LoadLibrary('libX11.so')
-            x11.XInitThreads()
-        except:
-            print("Warning: failed to XInitThreads()")
+# GNU Radio version: v3.10.11.0-89-ga17f69e7
 
 from PyQt5 import Qt
 from gnuradio import qtgui
-from gnuradio.filter import firdes
-import sip
+from PyQt5 import QtCore
 from gnuradio import analog
 from gnuradio import blocks
 import numpy
 from gnuradio import filter
+from gnuradio.filter import firdes
 from gnuradio import gr
 from gnuradio.fft import window
 import sys
 import signal
+from PyQt5 import Qt
 from argparse import ArgumentParser
 from gnuradio.eng_arg import eng_float, intx
 from gnuradio import eng_notation
-from gnuradio.qtgui import Range, RangeWidget
-from PyQt5 import QtCore
 import math
 import numpy as np
 import ook_epy_block_0 as epy_block_0  # embedded python block
 import ook_epy_block_0_0 as epy_block_0_0  # embedded python block
+import sip
+import threading
 
 
-
-from gnuradio import qtgui
 
 class ook(gr.top_block, Qt.QWidget):
 
@@ -56,8 +43,8 @@ class ook(gr.top_block, Qt.QWidget):
         qtgui.util.check_set_qss()
         try:
             self.setWindowIcon(Qt.QIcon.fromTheme('gnuradio-grc'))
-        except:
-            pass
+        except BaseException as exc:
+            print(f"Qt GUI: Could not set Icon: {str(exc)}", file=sys.stderr)
         self.top_scroll_layout = Qt.QVBoxLayout()
         self.setLayout(self.top_scroll_layout)
         self.top_scroll = Qt.QScrollArea()
@@ -70,15 +57,15 @@ class ook(gr.top_block, Qt.QWidget):
         self.top_grid_layout = Qt.QGridLayout()
         self.top_layout.addLayout(self.top_grid_layout)
 
-        self.settings = Qt.QSettings("GNU Radio", "ook")
+        self.settings = Qt.QSettings("gnuradio/flowgraphs", "ook")
 
         try:
-            if StrictVersion(Qt.qVersion()) < StrictVersion("5.0.0"):
-                self.restoreGeometry(self.settings.value("geometry").toByteArray())
-            else:
-                self.restoreGeometry(self.settings.value("geometry"))
-        except:
-            pass
+            geometry = self.settings.value("geometry")
+            if geometry:
+                self.restoreGeometry(geometry)
+        except BaseException as exc:
+            print(f"Qt GUI: Could not restore geometry: {str(exc)}", file=sys.stderr)
+        self.flowgraph_started = threading.Event()
 
         ##################################################
         # Variables
@@ -93,8 +80,9 @@ class ook(gr.top_block, Qt.QWidget):
         ##################################################
         # Blocks
         ##################################################
-        self._fc_range = Range(0, samp_rate/8, samp_rate/1000, Rb*4, 200)
-        self._fc_win = RangeWidget(self._fc_range, self.set_fc, "Carrier Freq. ", "counter_slider", float, QtCore.Qt.Horizontal)
+
+        self._fc_range = qtgui.Range(0, samp_rate/8, samp_rate/1000, Rb*4, 200)
+        self._fc_win = qtgui.RangeWidget(self._fc_range, self.set_fc, "Carrier Freq. ", "counter_slider", float, QtCore.Qt.Horizontal)
         self.top_grid_layout.addWidget(self._fc_win, 0, 0, 1, 1)
         for r in range(0, 1):
             self.top_grid_layout.setRowStretch(r, 1)
@@ -127,7 +115,7 @@ class ook(gr.top_block, Qt.QWidget):
         for c in range(0, 2):
             self.top_grid_layout.setColumnStretch(c, 1)
         self.qtgui_time_sink_x_0_1_0_0 = qtgui.time_sink_c(
-            16*Sps, #size
+            (16*Sps), #size
             samp_rate, #samp_rate
             'CE Modulated Signal', #name
             1, #number of inputs
@@ -182,7 +170,7 @@ class ook(gr.top_block, Qt.QWidget):
         for c in range(1, 2):
             self.Menu_grid_layout_1.setColumnStretch(c, 1)
         self.qtgui_time_sink_x_0_1_0 = qtgui.time_sink_f(
-            16*Sps, #size
+            (16*Sps), #size
             samp_rate, #samp_rate
             'Modulating versus RF Modulated Signal', #name
             2, #number of inputs
@@ -234,7 +222,7 @@ class ook(gr.top_block, Qt.QWidget):
         for c in range(1, 2):
             self.Menu_grid_layout_1.setColumnStretch(c, 1)
         self.qtgui_time_sink_x_0_1 = qtgui.time_sink_f(
-            16*Sps, #size
+            (16*Sps), #size
             samp_rate, #samp_rate
             'Modudating Signal', #name
             1, #number of inputs
@@ -338,7 +326,7 @@ class ook(gr.top_block, Qt.QWidget):
         for c in range(1, 2):
             self.Menu_grid_layout_0.setColumnStretch(c, 1)
         self.qtgui_freq_sink_x_0_0 = qtgui.freq_sink_c(
-            1024*8, #size
+            (1024*8), #size
             window.WIN_BLACKMAN_hARRIS, #wintype
             0, #fc
             samp_rate, #bw
@@ -347,7 +335,7 @@ class ook(gr.top_block, Qt.QWidget):
             None # parent
         )
         self.qtgui_freq_sink_x_0_0.set_update_time(0.10)
-        self.qtgui_freq_sink_x_0_0.set_y_axis(-65, -35)
+        self.qtgui_freq_sink_x_0_0.set_y_axis((-65), (-35))
         self.qtgui_freq_sink_x_0_0.set_y_label('Relative Gain', 'dB')
         self.qtgui_freq_sink_x_0_0.set_trigger_mode(qtgui.TRIG_MODE_FREE, 0.0, 0, "")
         self.qtgui_freq_sink_x_0_0.enable_autoscale(False)
@@ -384,7 +372,7 @@ class ook(gr.top_block, Qt.QWidget):
         for c in range(1, 2):
             self.Menu_grid_layout_2.setColumnStretch(c, 1)
         self.qtgui_freq_sink_x_0 = qtgui.freq_sink_f(
-            1024*8, #size
+            (1024*8), #size
             window.WIN_BLACKMAN_hARRIS, #wintype
             0, #fc
             samp_rate, #bw
@@ -393,7 +381,7 @@ class ook(gr.top_block, Qt.QWidget):
             None # parent
         )
         self.qtgui_freq_sink_x_0.set_update_time(0.10)
-        self.qtgui_freq_sink_x_0.set_y_axis(-65, -35)
+        self.qtgui_freq_sink_x_0.set_y_axis((-65), (-35))
         self.qtgui_freq_sink_x_0.set_y_label('Relative Gain', 'dB')
         self.qtgui_freq_sink_x_0.set_trigger_mode(qtgui.TRIG_MODE_FREE, 0.0, 0, "")
         self.qtgui_freq_sink_x_0.enable_autoscale(False)
@@ -437,8 +425,8 @@ class ook(gr.top_block, Qt.QWidget):
             None # parent
         )
         self.qtgui_const_sink_x_0.set_update_time(0.10)
-        self.qtgui_const_sink_x_0.set_y_axis(-2, 2)
-        self.qtgui_const_sink_x_0.set_x_axis(-2, 2)
+        self.qtgui_const_sink_x_0.set_y_axis((-2), 2)
+        self.qtgui_const_sink_x_0.set_x_axis((-2), 2)
         self.qtgui_const_sink_x_0.set_trigger_mode(qtgui.TRIG_MODE_FREE, qtgui.TRIG_SLOPE_POS, 0.0, 0, "")
         self.qtgui_const_sink_x_0.enable_autoscale(False)
         self.qtgui_const_sink_x_0.enable_grid(False)
@@ -477,8 +465,8 @@ class ook(gr.top_block, Qt.QWidget):
             self.Menu_grid_layout_3.setColumnStretch(c, 1)
         self.interp_fir_filter_xxx_0 = filter.interp_fir_filter_fff(Sps, h)
         self.interp_fir_filter_xxx_0.declare_sample_delay(0)
-        self._fd_range = Range(0, samp_rate/8, samp_rate/1000, Rb, 200)
-        self._fd_win = RangeWidget(self._fd_range, self.set_fd, "Deviation Freq", "counter_slider", float, QtCore.Qt.Horizontal)
+        self._fd_range = qtgui.Range(0, samp_rate/8, samp_rate/1000, Rb, 200)
+        self._fd_win = qtgui.RangeWidget(self._fd_range, self.set_fd, "Deviation Freq", "counter_slider", float, QtCore.Qt.Horizontal)
         self.top_grid_layout.addWidget(self._fd_win, 0, 1, 1, 1)
         for r in range(0, 1):
             self.top_grid_layout.setRowStretch(r, 1)
@@ -511,7 +499,7 @@ class ook(gr.top_block, Qt.QWidget):
 
 
     def closeEvent(self, event):
-        self.settings = Qt.QSettings("GNU Radio", "ook")
+        self.settings = Qt.QSettings("gnuradio/flowgraphs", "ook")
         self.settings.setValue("geometry", self.saveGeometry())
         self.stop()
         self.wait()
@@ -573,14 +561,12 @@ class ook(gr.top_block, Qt.QWidget):
 
 def main(top_block_cls=ook, options=None):
 
-    if StrictVersion("4.5.0") <= StrictVersion(Qt.qVersion()) < StrictVersion("5.0.0"):
-        style = gr.prefs().get_string('qtgui', 'style', 'raster')
-        Qt.QApplication.setGraphicsSystem(style)
     qapp = Qt.QApplication(sys.argv)
 
     tb = top_block_cls()
 
     tb.start()
+    tb.flowgraph_started.set()
 
     tb.show()
 
