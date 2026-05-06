@@ -5,13 +5,11 @@ import math
 class blk(gr.sync_block):  
     """
     M-PSK Modulator:
-    - Input: binary stream (0/1)
-    - Outputs:
-        0: complex baseband signal
-        1: real RF signal
+    - Output 0: envolvente compleja (1 sample/symbol)
+    - Output 1: RF real (bien muestreada)
     """
 
-    def __init__(self, M=4, A=1.0, fc=1000, fs=32000):  
+    def __init__(self, M=4, A=1.0, fc=32000, fs=256000, sps=8):  
         gr.sync_block.__init__(
             self,
             name='MPSK_Modulator',
@@ -23,10 +21,10 @@ class blk(gr.sync_block):
         self.A = A
         self.fc = fc
         self.fs = fs
-        self.n_m=0
+        self.sps = sps  # samples per symbol
         
-        self.k = int(np.log2(M))  # bits per symbol
-        self.phase_acc = 0  # para continuidad de fase si quieres extenderlo
+        self.k = int(np.log2(M))
+        self.n_m = 0  # contador global de muestras RF
 
     def work(self, input_items, output_items):
         bits = input_items[0]
@@ -34,39 +32,39 @@ class blk(gr.sync_block):
         rf_out = output_items[1]
 
         N = len(bits)
-
-        # Número de símbolos que podemos formar
         num_symbols = N // self.k
 
         if num_symbols == 0:
             return 0
 
-        # Agrupar bits
-        bits_reshaped = bits[:num_symbols*self.k].reshape((num_symbols, self.k))
+        bits = bits[:num_symbols * self.k]
+        bits_reshaped = bits.reshape((num_symbols, self.k))
 
-        # Convertir bits a enteros
+        # 🔹 bits → símbolos
         symbols = np.zeros(num_symbols, dtype=np.int32)
         for i in range(self.k):
             symbols += bits_reshaped[:, i] << (self.k - i - 1)
 
-        # Mapear a fase
-        phases = 2 * np.pi * symbols / self.M + math.pi/16
+        # 🔹 fases
+        phases = 2 * np.pi * symbols / self.M
 
-        # Envolvente compleja (baseband)
+        # 🔹 envolvente compleja (NO tocar esto)
         bb = self.A * np.exp(1j * phases)
 
-        # Tiempo discreto
-        t = np.arange(num_symbols) / self.fs
+        # 🔹 generar RF correctamente
+        total_samples = num_symbols * self.sps
+        n = np.arange(self.n_m, self.n_m + total_samples)
+        self.n_m += total_samples
 
-        #n = np.linspace(self.n_m,self.n_m+N-1,N)
-        #self.n_m += N
-        #rf = self.A*np.cos(2*math.pi*self.fc*n/self.samp_rate+phases)
+        # expandir fases PERO alineadas con muestras RF
+        phases_expanded = np.repeat(phases, self.sps)
 
-        # Señal RF
-        rf = self.A * np.cos(2 * np.pi * self.fc * t + phases)
+        rf = self.A * np.cos(2 * np.pi * self.fc * n / self.fs + phases_expanded)
 
-        # Salidas
-        bb_out[:num_symbols] = bb
-        rf_out[:num_symbols] = rf
+        # 🔹 salidas
+        out_len = min(len(rf_out), total_samples, len(bb_out))
 
-        return num_symbols
+        bb_out[:num_symbols] = bb[:num_symbols]
+        rf_out[:out_len] = rf[:out_len]
+
+        return out_len

@@ -37,7 +37,7 @@ blocks:
   id: variable
   parameters:
     comment: ''
-    value: '8'
+    value: '16'
   states:
     bus_sink: false
     bus_source: false
@@ -97,7 +97,7 @@ blocks:
   id: variable
   parameters:
     comment: ''
-    value: len(h)
+    value: '128'
   states:
     bus_sink: false
     bus_source: false
@@ -109,7 +109,7 @@ blocks:
   id: variable
   parameters:
     comment: ''
-    value: (1.,1.,1.,1.,1.,1.,1.,1,1.,1.,1.,1.,1.,1.,1.,1,1.,1.,1.,1.,1.,1.,1.,1,1.,1.,1.,1.,1.,1.,1.,1)
+    value: '[1]*Sps'
   states:
     bus_sink: false
     bus_source: false
@@ -181,6 +181,23 @@ blocks:
     bus_source: false
     bus_structure: null
     coordinate: [32, 168.0]
+    rotation: 0
+    state: true
+- name: blocks_char_to_float_0
+  id: blocks_char_to_float
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    scale: '1'
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [136, 316.0]
     rotation: 0
     state: true
 - name: blocks_complex_to_mag_squared_0
@@ -267,51 +284,51 @@ blocks:
   parameters:
     A: '1'
     M: M
+    Rs: Rs
     _source_code: "import numpy as np\nfrom gnuradio import gr\nimport math\n\nclass\
-      \ blk(gr.sync_block):  \n    \"\"\"\n    M-PSK Modulator:\n    - Output 0: envolvente\
-      \ compleja (1 sample/symbol)\n    - Output 1: RF real (bien muestreada)\n  \
-      \  \"\"\"\n\n    def __init__(self, M=4, A=1.0, fc=32000, fs=256000, sps=8):\
-      \  \n        gr.sync_block.__init__(\n            self,\n            name='MPSK_Modulator',\n\
-      \            in_sig=[np.int8],\n            out_sig=[np.complex64, np.float32]\n\
-      \        )\n        \n        self.M = M\n        self.A = A\n        self.fc\
-      \ = fc\n        self.fs = fs\n        self.sps = sps  # samples per symbol\n\
-      \        \n        self.k = int(np.log2(M))\n        self.n_m = 0  # contador\
-      \ global de muestras RF\n\n    def work(self, input_items, output_items):\n\
-      \        bits = input_items[0]\n        bb_out = output_items[0]\n        rf_out\
-      \ = output_items[1]\n\n        N = len(bits)\n        num_symbols = N // self.k\n\
-      \n        if num_symbols == 0:\n            return 0\n\n        bits = bits[:num_symbols\
-      \ * self.k]\n        bits_reshaped = bits.reshape((num_symbols, self.k))\n\n\
-      \        # \U0001F539 bits \u2192 s\xEDmbolos\n        symbols = np.zeros(num_symbols,\
-      \ dtype=np.int32)\n        for i in range(self.k):\n            symbols += bits_reshaped[:,\
-      \ i] << (self.k - i - 1)\n\n        # \U0001F539 fases\n        phases = 2 *\
-      \ np.pi * symbols / self.M\n\n        # \U0001F539 envolvente compleja (NO tocar\
-      \ esto)\n        bb = self.A * np.exp(1j * phases)\n\n        # \U0001F539 generar\
-      \ RF correctamente\n        total_samples = num_symbols * self.sps\n       \
-      \ n = np.arange(self.n_m, self.n_m + total_samples)\n        self.n_m += total_samples\n\
-      \n        # expandir fases PERO alineadas con muestras RF\n        phases_expanded\
-      \ = np.repeat(phases, self.sps)\n\n        rf = self.A * np.cos(2 * np.pi *\
-      \ self.fc * n / self.fs + phases_expanded)\n\n        # \U0001F539 salidas\n\
-      \        out_len = min(len(rf_out), total_samples, len(bb_out))\n\n        bb_out[:num_symbols]\
-      \ = bb[:num_symbols]\n        rf_out[:out_len] = rf[:out_len]\n\n        return\
-      \ out_len\n"
+      \ blk(gr.interp_block):  \n    \"\"\"\n    M-PSK Modulator con interpolaci\xF3\
+      n correcta\n\n    Input: bits (float)\n    Output:\n        0: baseband complejo\n\
+      \        1: RF real\n    \"\"\"\n\n    def __init__(self, M=4, A=1.0, fc=1000,\
+      \ fs=32000, Rs=1000):  \n        \n        self.k = int(np.log2(M))      # bits\
+      \ por s\xEDmbolo\n        self.Ns = int(fs / Rs)        # samples por s\xED\
+      mbolo\n        self.interp = self.Ns // self.k  # factor de interpolaci\xF3\
+      n\n        \n        gr.interp_block.__init__(\n            self,\n        \
+      \    name='MPSK_Modulator',\n            in_sig=[np.float32],\n            out_sig=[np.complex64,\
+      \ np.float32],\n            interp=self.interp\n        )\n        \n      \
+      \  self.M = M\n        self.A = A\n        self.fc = fc\n        self.fs = fs\n\
+      \        \n        self.n_m = 0\n\n    def work(self, input_items, output_items):\n\
+      \        x = input_items[0]\n        bb_out = output_items[0]\n        rf_out\
+      \ = output_items[1]\n\n        # float \u2192 bits\n        bits = (x > 0.5).astype(np.int8)\n\
+      \n        N = len(bits)\n        num_symbols = N // self.k\n\n        if num_symbols\
+      \ == 0:\n            return 0\n\n        bits = bits[:num_symbols * self.k]\n\
+      \        bits_reshaped = bits.reshape((num_symbols, self.k))\n\n        # bits\
+      \ \u2192 s\xEDmbolos\n        symbols = np.zeros(num_symbols, dtype=np.int32)\n\
+      \        for i in range(self.k):\n            symbols += bits_reshaped[:, i]\
+      \ << (self.k - i - 1)\n\n        # fases\n        phases = 2 * np.pi * symbols\
+      \ / self.M + math.pi / 16\n\n        # expandir\n        phases_up = np.repeat(phases,\
+      \ self.Ns)\n\n        # baseband\n        bb = self.A * np.exp(1j * phases_up)\n\
+      \n        # tiempo continuo\n        N_out = len(bb)\n        n = np.arange(self.n_m,\
+      \ self.n_m + N_out)\n        self.n_m += N_out\n\n        # RF\n        rf =\
+      \ self.A * np.cos(2 * np.pi * self.fc * n / self.fs + phases_up)\n\n       \
+      \ # salida\n        bb_out[:N_out] = bb\n        rf_out[:N_out] = rf\n\n   \
+      \     return N\n"
     affinity: ''
     alias: ''
     comment: ''
-    fc: '16000'
+    fc: '12400'
     fs: samp_rate
     maxoutbuf: '0'
     minoutbuf: '0'
-    sps: Sps
   states:
-    _io_cache: '(''MPSK_Modulator'', ''blk'', [(''M'', ''4''), (''A'', ''1.0''), (''fc'',
-      ''32000''), (''fs'', ''256000''), (''sps'', ''8'')], [(''0'', ''byte'', 1)],
-      [(''0'', ''complex'', 1), (''1'', ''float'', 1)], ''\n    M-PSK Modulator:\n    -
-      Output 0: envolvente compleja (1 sample/symbol)\n    - Output 1: RF real (bien
-      muestreada)\n    '', [''A'', ''M'', ''fc'', ''fs'', ''sps''])'
+    _io_cache: "('MPSK_Modulator', 'blk', [('M', '4'), ('A', '1.0'), ('fc', '1000'),\
+      \ ('fs', '32000'), ('Rs', '1000')], [('0', 'float', 1)], [('0', 'complex', 1),\
+      \ ('1', 'float', 1)], '\\n    M-PSK Modulator con interpolaci\xF3n correcta\\\
+      n\\n    Input: bits (float)\\n    Output:\\n        0: baseband complejo\\n\
+      \        1: RF real\\n    ', ['A', 'M', 'fc', 'fs'])"
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [312, 168.0]
+    coordinate: [368, 172.0]
     rotation: 0
     state: enabled
 - name: fft_vxx_0
@@ -359,12 +376,12 @@ blocks:
     minoutbuf: '0'
     samp_delay: '0'
     taps: h
-    type: ccc
+    type: fff
   states:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [576, 168.0]
+    coordinate: [288, 308.0]
     rotation: 0
     state: true
 - name: qtgui_const_sink_x_0
@@ -650,7 +667,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1000, 160.0]
+    coordinate: [752, 108.0]
     rotation: 0
     state: true
 - name: qtgui_time_sink_x_0_1_0_0_0
@@ -709,7 +726,7 @@ blocks:
     name: '""'
     nconnections: '1'
     size: int(32*Sps/Nb)
-    srate: '16000'
+    srate: samp_rate
     stemplot: 'False'
     style1: '1'
     style10: '1'
@@ -728,7 +745,7 @@ blocks:
     tr_slope: qtgui.TRIG_SLOPE_POS
     tr_tag: '""'
     type: float
-    update_time: '1'
+    update_time: '0.10'
     width1: '2'
     width10: '1'
     width2: '2'
@@ -833,7 +850,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1000, 256.0]
+    coordinate: [768, 196.0]
     rotation: 0
     state: enabled
 - name: virtual_source_0
@@ -851,18 +868,19 @@ blocks:
     state: enabled
 
 connections:
-- [analog_random_source_x_0, '0', epy_block_0_0, '0']
+- [analog_random_source_x_0, '0', blocks_char_to_float_0, '0']
+- [blocks_char_to_float_0, '0', interp_fir_filter_xxx_0, '0']
 - [blocks_complex_to_mag_squared_0, '0', epy_block_0, '0']
 - [blocks_multiply_const_vxx_1, '0', qtgui_vector_sink_f_0, '0']
 - [blocks_stream_to_vector_0, '0', fft_vxx_0, '0']
 - [epy_block_0, '0', blocks_multiply_const_vxx_1, '0']
-- [epy_block_0_0, '0', interp_fir_filter_xxx_0, '0']
 - [epy_block_0_0, '0', qtgui_const_sink_x_0, '0']
 - [epy_block_0_0, '0', qtgui_time_sink_x_0_1_0, '0']
+- [epy_block_0_0, '0', qtgui_time_sink_x_0_1_0_0, '0']
+- [epy_block_0_0, '0', virtual_sink_0, '0']
 - [epy_block_0_0, '1', qtgui_time_sink_x_0_1_0_0_0, '0']
 - [fft_vxx_0, '0', blocks_complex_to_mag_squared_0, '0']
-- [interp_fir_filter_xxx_0, '0', qtgui_time_sink_x_0_1_0_0, '0']
-- [interp_fir_filter_xxx_0, '0', virtual_sink_0, '0']
+- [interp_fir_filter_xxx_0, '0', epy_block_0_0, '0']
 - [virtual_source_0, '0', blocks_stream_to_vector_0, '0']
 
 metadata:

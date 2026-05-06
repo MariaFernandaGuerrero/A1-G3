@@ -79,13 +79,13 @@ class mpsk(gr.top_block, Qt.QWidget):
         ##################################################
         # Variables
         ##################################################
-        self.M = M = 8
-        self.h = h = (1.,1.,1.,1.,1.,1.,1.,1,1.,1.,1.,1.,1.,1.,1.,1,1.,1.,1.,1.,1.,1.,1.,1,1.,1.,1.,1.,1.,1.,1.,1)
+        self.M = M = 16
         self.Rb = Rb = 32000
         self.Nb = Nb = int(math.log(M,2))
-        self.Sps = Sps = len(h)
+        self.Sps = Sps = 128
         self.Rs = Rs = Rb/Nb
         self.samp_rate = samp_rate = Rs*Sps
+        self.h = h = [1]*Sps
         self.N = N = 1024
 
         ##################################################
@@ -147,12 +147,12 @@ class mpsk(gr.top_block, Qt.QWidget):
             self.Menu_grid_layout_0.setColumnStretch(c, 1)
         self.qtgui_time_sink_x_0_1_0_0_0 = qtgui.time_sink_f(
             int(32*Sps/Nb), #size
-            16000, #samp_rate
+            samp_rate, #samp_rate
             "", #name
             1, #number of inputs
             None # parent
         )
-        self.qtgui_time_sink_x_0_1_0_0_0.set_update_time(1)
+        self.qtgui_time_sink_x_0_1_0_0_0.set_update_time(0.10)
         self.qtgui_time_sink_x_0_1_0_0_0.set_y_axis(-1, 1)
 
         self.qtgui_time_sink_x_0_1_0_0_0.set_y_label('Amplitude', "")
@@ -336,32 +336,34 @@ class mpsk(gr.top_block, Qt.QWidget):
 
         self._qtgui_const_sink_x_0_win = sip.wrapinstance(self.qtgui_const_sink_x_0.qwidget(), Qt.QWidget)
         self.Menu_layout_0.addWidget(self._qtgui_const_sink_x_0_win)
-        self.interp_fir_filter_xxx_0 = filter.interp_fir_filter_ccc(Sps, h)
+        self.interp_fir_filter_xxx_0 = filter.interp_fir_filter_fff(Sps, h)
         self.interp_fir_filter_xxx_0.declare_sample_delay(0)
         self.fft_vxx_0 = fft.fft_vcc(N, True, [1]*N, True, 1)
-        self.epy_block_0_0 = epy_block_0_0.blk(M=M, A=1, fc=16000, fs=samp_rate, sps=Sps)
+        self.epy_block_0_0 = epy_block_0_0.blk(M=M, A=1, fc=12400, fs=samp_rate, Rs=Rs)
         self.epy_block_0 = epy_block_0.blk(N=N)
         self.blocks_stream_to_vector_0 = blocks.stream_to_vector(gr.sizeof_gr_complex*1, N)
         self.blocks_multiply_const_vxx_1 = blocks.multiply_const_vff([1/(N*samp_rate)]*N)
         self.blocks_complex_to_mag_squared_0 = blocks.complex_to_mag_squared(N)
+        self.blocks_char_to_float_0 = blocks.char_to_float(1, 1)
         self.analog_random_source_x_0 = blocks.vector_source_b(list(map(int, numpy.random.randint(0, 2, 1000))), True)
 
 
         ##################################################
         # Connections
         ##################################################
-        self.connect((self.analog_random_source_x_0, 0), (self.epy_block_0_0, 0))
+        self.connect((self.analog_random_source_x_0, 0), (self.blocks_char_to_float_0, 0))
+        self.connect((self.blocks_char_to_float_0, 0), (self.interp_fir_filter_xxx_0, 0))
         self.connect((self.blocks_complex_to_mag_squared_0, 0), (self.epy_block_0, 0))
         self.connect((self.blocks_multiply_const_vxx_1, 0), (self.qtgui_vector_sink_f_0, 0))
         self.connect((self.blocks_stream_to_vector_0, 0), (self.fft_vxx_0, 0))
         self.connect((self.epy_block_0, 0), (self.blocks_multiply_const_vxx_1, 0))
-        self.connect((self.epy_block_0_0, 0), (self.interp_fir_filter_xxx_0, 0))
+        self.connect((self.epy_block_0_0, 0), (self.blocks_stream_to_vector_0, 0))
         self.connect((self.epy_block_0_0, 0), (self.qtgui_const_sink_x_0, 0))
         self.connect((self.epy_block_0_0, 0), (self.qtgui_time_sink_x_0_1_0, 0))
+        self.connect((self.epy_block_0_0, 0), (self.qtgui_time_sink_x_0_1_0_0, 0))
         self.connect((self.epy_block_0_0, 1), (self.qtgui_time_sink_x_0_1_0_0_0, 0))
         self.connect((self.fft_vxx_0, 0), (self.blocks_complex_to_mag_squared_0, 0))
-        self.connect((self.interp_fir_filter_xxx_0, 0), (self.blocks_stream_to_vector_0, 0))
-        self.connect((self.interp_fir_filter_xxx_0, 0), (self.qtgui_time_sink_x_0_1_0_0, 0))
+        self.connect((self.interp_fir_filter_xxx_0, 0), (self.epy_block_0_0, 0))
 
 
     def closeEvent(self, event):
@@ -379,14 +381,6 @@ class mpsk(gr.top_block, Qt.QWidget):
         self.M = M
         self.set_Nb(int(math.log(self.M,2)))
         self.epy_block_0_0.M = self.M
-
-    def get_h(self):
-        return self.h
-
-    def set_h(self, h):
-        self.h = h
-        self.set_Sps(len(self.h))
-        self.interp_fir_filter_xxx_0.set_taps(self.h)
 
     def get_Rb(self):
         return self.Rb
@@ -408,8 +402,8 @@ class mpsk(gr.top_block, Qt.QWidget):
 
     def set_Sps(self, Sps):
         self.Sps = Sps
+        self.set_h([1]*self.Sps)
         self.set_samp_rate(self.Rs*self.Sps)
-        self.epy_block_0_0.sps = self.Sps
 
     def get_Rs(self):
         return self.Rs
@@ -427,7 +421,15 @@ class mpsk(gr.top_block, Qt.QWidget):
         self.blocks_multiply_const_vxx_1.set_k([1/(self.N*self.samp_rate)]*self.N)
         self.epy_block_0_0.fs = self.samp_rate
         self.qtgui_time_sink_x_0_1_0_0.set_samp_rate(self.samp_rate)
+        self.qtgui_time_sink_x_0_1_0_0_0.set_samp_rate(self.samp_rate)
         self.qtgui_vector_sink_f_0.set_x_axis(-self.samp_rate/2, self.samp_rate/self.N)
+
+    def get_h(self):
+        return self.h
+
+    def set_h(self, h):
+        self.h = h
+        self.interp_fir_filter_xxx_0.set_taps(self.h)
 
     def get_N(self):
         return self.N
