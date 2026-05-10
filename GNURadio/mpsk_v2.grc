@@ -280,32 +280,35 @@ blocks:
     A: '1'
     M: M
     _source_code: "import numpy as np\nfrom gnuradio import gr\nimport math\n\nclass\
-      \ blk(gr.sync_block):  \n    \"\"\"\n    M-PSK Modulator:\n    - Output 0: envolvente\
-      \ compleja (1 sample/symbol)\n    - Output 1: RF real (bien muestreada)\n  \
-      \  \"\"\"\n\n    def __init__(self, M=4, A=1.0, fc=32000, fs=256000, sps=8):\
-      \  \n        gr.sync_block.__init__(\n            self,\n            name='MPSK_Modulator',\n\
-      \            in_sig=[np.int8],\n            out_sig=[np.complex64, np.float32]\n\
-      \        )\n        \n        self.M = M\n        self.A = A\n        self.fc\
-      \ = fc\n        self.fs = fs\n        self.sps = sps  # samples per symbol\n\
-      \        \n        self.k = int(np.log2(M))\n        self.n_m = 0  # contador\
-      \ global de muestras RF\n\n    def work(self, input_items, output_items):\n\
-      \        bits = input_items[0]\n        bb_out = output_items[0]\n        rf_out\
-      \ = output_items[1]\n\n        N = len(bits)\n        num_symbols = N // self.k\n\
-      \n        if num_symbols == 0:\n            return 0\n\n        bits = bits[:num_symbols\
-      \ * self.k]\n        bits_reshaped = bits.reshape((num_symbols, self.k))\n\n\
-      \        # bits \u2192 s\xEDmbolos\n        symbols = np.zeros(num_symbols,\
-      \ dtype=np.int32)\n        for i in range(self.k):\n            symbols += bits_reshaped[:,\
-      \ i] << (self.k - i - 1)\n\n        # conversi\xF3n binario \u2192 Gray\n  \
-      \      gray_symbols = symbols ^ (symbols >> 1)\n\n        # fases Gray\n   \
-      \     phases = 2 * np.pi * gray_symbols / self.M\n\n        # envolvente compleja\n\
-      \        bb = self.A * np.exp(1j * phases)\n\n        # generar RF correctamente\n\
-      \        total_samples = num_symbols * self.sps\n        n = np.arange(self.n_m,\
-      \ self.n_m + total_samples)\n        self.n_m += total_samples\n\n        #\
-      \ expandir fases PERO alineadas con muestras RF\n        phases_expanded = np.repeat(phases,\
-      \ self.sps)\n\n        rf = self.A * np.cos(2 * np.pi * self.fc * n / self.fs\
-      \ + phases_expanded)\n\n        # salidas\n        out_len = min(len(rf_out),\
-      \ total_samples, len(bb_out))\n\n        bb_out[:num_symbols] = bb[:num_symbols]\n\
-      \        rf_out[:out_len] = rf[:out_len]\n\n        return out_len\n"
+      \ blk(gr.sync_block):  \n    \"\"\"\n    Constelaci\xF3n personalizada:\n  \
+      \  Magnitud = 1\n    \xC1ngulos:\n    75\xB0, 85\xB0, 95\xB0, 105\xB0\n    y\
+      \ sus opuestos +180\xB0\n    \"\"\"\n\n    def __init__(self, M=8, A=1.0, fc=32000,\
+      \ fs=256000, sps=8):  \n        gr.sync_block.__init__(\n            self,\n\
+      \            name='Custom_Constellation_Modulator',\n            in_sig=[np.int8],\n\
+      \            out_sig=[np.complex64, np.float32]\n        )\n        \n     \
+      \   self.M = M\n        self.A = A\n        self.fc = fc\n        self.fs =\
+      \ fs\n        self.sps = sps\n        \n        self.k = int(np.log2(M))\n \
+      \       self.n_m = 0\n\n        # \xE1ngulos personalizados en grados\n    \
+      \    angles_deg = np.array([75, 85, 95, 105, 255, 265, 275, 285])\n\n      \
+      \  # convertir a radianes\n        self.phases_table = np.deg2rad(angles_deg)\n\
+      \n    def work(self, input_items, output_items):\n        bits = input_items[0]\n\
+      \        bb_out = output_items[0]\n        rf_out = output_items[1]\n\n    \
+      \    N = len(bits)\n        num_symbols = N // self.k\n\n        if num_symbols\
+      \ == 0:\n            return 0\n\n        bits = bits[:num_symbols * self.k]\n\
+      \        bits_reshaped = bits.reshape((num_symbols, self.k))\n\n        # bits\
+      \ \u2192 s\xEDmbolos\n        symbols = np.zeros(num_symbols, dtype=np.int32)\n\
+      \n        for i in range(self.k):\n            symbols += bits_reshaped[:, i]\
+      \ << (self.k - i - 1)\n\n        # conversi\xF3n Gray\n        gray_symbols\
+      \ = symbols ^ (symbols >> 1)\n\n        # obtener fases personalizadas\n   \
+      \     phases = self.phases_table[gray_symbols]\n\n        # envolvente compleja\n\
+      \        bb = self.A * np.exp(1j * phases)\n\n        # generar RF\n       \
+      \ total_samples = num_symbols * self.sps\n\n        n = np.arange(self.n_m,\
+      \ self.n_m + total_samples)\n        self.n_m += total_samples\n\n        phases_expanded\
+      \ = np.repeat(phases, self.sps)\n\n        rf = self.A * np.cos(\n         \
+      \   2 * np.pi * self.fc * n / self.fs + phases_expanded\n        )\n\n     \
+      \   # salidas\n        out_len = min(len(rf_out), total_samples, len(bb_out))\n\
+      \n        bb_out[:num_symbols] = bb[:num_symbols]\n        rf_out[:out_len]\
+      \ = rf[:out_len]\n\n        return out_len\n"
     affinity: ''
     alias: ''
     comment: ''
@@ -315,11 +318,11 @@ blocks:
     minoutbuf: '0'
     sps: Sps
   states:
-    _io_cache: '(''MPSK_Modulator'', ''blk'', [(''M'', ''4''), (''A'', ''1.0''), (''fc'',
-      ''32000''), (''fs'', ''256000''), (''sps'', ''8'')], [(''0'', ''byte'', 1)],
-      [(''0'', ''complex'', 1), (''1'', ''float'', 1)], ''\n    M-PSK Modulator:\n    -
-      Output 0: envolvente compleja (1 sample/symbol)\n    - Output 1: RF real (bien
-      muestreada)\n    '', [''A'', ''M'', ''fc'', ''fs'', ''sps''])'
+    _io_cache: "('Custom_Constellation_Modulator', 'blk', [('M', '8'), ('A', '1.0'),\
+      \ ('fc', '32000'), ('fs', '256000'), ('sps', '8')], [('0', 'byte', 1)], [('0',\
+      \ 'complex', 1), ('1', 'float', 1)], '\\n    Constelaci\xF3n personalizada:\\\
+      n    Magnitud = 1\\n    \xC1ngulos:\\n    75\xB0, 85\xB0, 95\xB0, 105\xB0\\\
+      n    y sus opuestos +180\xB0\\n    ', ['A', 'M', 'fc', 'fs', 'sps'])"
     bus_sink: false
     bus_source: false
     bus_structure: null
