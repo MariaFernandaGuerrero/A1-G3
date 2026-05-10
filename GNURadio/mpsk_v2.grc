@@ -175,26 +175,6 @@ blocks:
     coordinate: [936, 104.0]
     rotation: 0
     state: enabled
-- name: analog_random_source_x_0
-  id: analog_random_source_x
-  parameters:
-    affinity: ''
-    alias: ''
-    comment: ''
-    max: '2'
-    maxoutbuf: '0'
-    min: '0'
-    minoutbuf: '0'
-    num_samps: '1000'
-    repeat: 'True'
-    type: byte
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [32, 168.0]
-    rotation: 0
-    state: true
 - name: blocks_complex_to_mag_squared_0
   id: blocks_complex_to_mag_squared
   parameters:
@@ -247,6 +227,26 @@ blocks:
     coordinate: [768, 232.0]
     rotation: 0
     state: true
+- name: blocks_vector_source_x_0
+  id: blocks_vector_source_x
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    repeat: 'True'
+    tags: '[]'
+    type: byte
+    vector: (0,0,0,0,0,1,0,1,1,0,1,0,1,1,0,1,1,1,1,0,1,1,0,0)
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [0, 172.0]
+    rotation: 0
+    state: true
 - name: epy_block_0
   id: epy_block
   parameters:
@@ -293,19 +293,19 @@ blocks:
       \ = output_items[1]\n\n        N = len(bits)\n        num_symbols = N // self.k\n\
       \n        if num_symbols == 0:\n            return 0\n\n        bits = bits[:num_symbols\
       \ * self.k]\n        bits_reshaped = bits.reshape((num_symbols, self.k))\n\n\
-      \        # \U0001F539 bits \u2192 s\xEDmbolos\n        symbols = np.zeros(num_symbols,\
+      \        # bits \u2192 s\xEDmbolos\n        symbols = np.zeros(num_symbols,\
       \ dtype=np.int32)\n        for i in range(self.k):\n            symbols += bits_reshaped[:,\
-      \ i] << (self.k - i - 1)\n\n        # \U0001F539 fases\n        phases = 2 *\
-      \ np.pi * symbols / self.M\n\n        # \U0001F539 envolvente compleja (NO tocar\
-      \ esto)\n        bb = self.A * np.exp(1j * phases)\n\n        # \U0001F539 generar\
-      \ RF correctamente\n        total_samples = num_symbols * self.sps\n       \
-      \ n = np.arange(self.n_m, self.n_m + total_samples)\n        self.n_m += total_samples\n\
-      \n        # expandir fases PERO alineadas con muestras RF\n        phases_expanded\
-      \ = np.repeat(phases, self.sps)\n\n        rf = self.A * np.cos(2 * np.pi *\
-      \ self.fc * n / self.fs + phases_expanded)\n\n        # \U0001F539 salidas\n\
-      \        out_len = min(len(rf_out), total_samples, len(bb_out))\n\n        bb_out[:num_symbols]\
-      \ = bb[:num_symbols]\n        rf_out[:out_len] = rf[:out_len]\n\n        return\
-      \ out_len\n"
+      \ i] << (self.k - i - 1)\n\n        # conversi\xF3n binario \u2192 Gray\n  \
+      \      gray_symbols = symbols ^ (symbols >> 1)\n\n        # fases Gray\n   \
+      \     phases = 2 * np.pi * gray_symbols / self.M\n\n        # envolvente compleja\n\
+      \        bb = self.A * np.exp(1j * phases)\n\n        # generar RF correctamente\n\
+      \        total_samples = num_symbols * self.sps\n        n = np.arange(self.n_m,\
+      \ self.n_m + total_samples)\n        self.n_m += total_samples\n\n        #\
+      \ expandir fases PERO alineadas con muestras RF\n        phases_expanded = np.repeat(phases,\
+      \ self.sps)\n\n        rf = self.A * np.cos(2 * np.pi * self.fc * n / self.fs\
+      \ + phases_expanded)\n\n        # salidas\n        out_len = min(len(rf_out),\
+      \ total_samples, len(bb_out))\n\n        bb_out[:num_symbols] = bb[:num_symbols]\n\
+      \        rf_out[:out_len] = rf[:out_len]\n\n        return out_len\n"
     affinity: ''
     alias: ''
     comment: ''
@@ -802,7 +802,6 @@ blocks:
     label7: ''
     label8: ''
     label9: ''
-    legend: 'True'
     maxoutbuf: '0'
     minoutbuf: '0'
     name: '"PSD (Watts/Hz)"'
@@ -864,10 +863,10 @@ blocks:
     state: enabled
 
 connections:
-- [analog_random_source_x_0, '0', epy_block_0_0, '0']
 - [blocks_complex_to_mag_squared_0, '0', epy_block_0, '0']
 - [blocks_multiply_const_vxx_1, '0', qtgui_vector_sink_f_0, '0']
 - [blocks_stream_to_vector_0, '0', virtual_sink_0, '0']
+- [blocks_vector_source_x_0, '0', epy_block_0_0, '0']
 - [epy_block_0, '0', blocks_multiply_const_vxx_1, '0']
 - [epy_block_0_0, '0', interp_fir_filter_xxx_0, '0']
 - [epy_block_0_0, '0', qtgui_const_sink_x_0, '0']
@@ -880,4 +879,3 @@ connections:
 
 metadata:
   file_format: 1
-  grc_version: v3.10.11.0-89-ga17f69e7
